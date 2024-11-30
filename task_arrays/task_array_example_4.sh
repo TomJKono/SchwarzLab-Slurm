@@ -9,11 +9,13 @@
 #SBATCH -e array_%A-%a.err
 #SBATCH -o array_%A-%a.out
 
-# Example 4: Really, a job array just exports a single integer into the job
-# environment. How you use this integer is up to you!
-NCLUST="${SLURM_ARRAY_TASK_ID}"
-N_REPS=10
-for ((i=1;i<="${N_REPS}";i++))
-do
-    k_means data.dat "${NCLUST}" > kmeans.result.rep"${i}".K"${NCLUST}"
-done
+# Example 4: Very similar to example 3, but we use a bash array instead of just
+# a file listing.
+BAM_DIR="/path/to/bams"
+BAM_ARRAY=($(find "${BAM_DIR}" -mindepth 1 -maxdepth 1 -type f -name '*.bam' \
+    | sort -V))
+CURRENT_BAM=${BAM_ARRAY[${SLURM_ARRAY_TASK_ID}]}
+OUTPUT_BAM=${CURRENT_BAM/.bam/.processed.bam}
+samtools view -hbu -q 10 -F 4 "${CURRENT_BAM}" \
+    samtools sort -o "${OUTPUT_BAM}" -
+samtools index "${OUTPUT_BAM}"
